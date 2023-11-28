@@ -1,0 +1,204 @@
+---
+- hosts: all
+  become: true
+  tasks:
+
+  - name: Set OpenStack packages
+    set_fact:
+      openstack_packages:
+        - python3-openstackclient
+        - mariadb-server
+        - rabbitmq-server
+        - memcached
+        - etcd
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Update package cache for Ubuntu
+    apt:
+      update_cache: yes
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Install and configure NTP for Ubuntu
+    package:
+      name: ntp
+      state: present
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Start and enable NTP service for Ubuntu
+    service:
+      name: ntp
+      state: started
+      enabled: yes
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Install OpenStack for Ubuntu
+    apt:
+      name: python3-openstackclient
+      state: present
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Install OpenStack packages for Ubuntu
+    package:
+      name: "{{ item }}"
+      state: present
+    with_items: "{{ openstack_packages }}"
+    tags: openstack-packages
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Update package cache for Ubuntu
+    package:
+      name: "{{ item }}"
+      state: present
+    with_items: "{{ openstack_packages }}"
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Install database server for Ubuntu
+    package:
+      name: mariadb-server
+      state: present
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Install message queue server for Ubuntu
+    package:
+      name: rabbitmq-server
+      state: present
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Start and enable rabbitmq-server service for Ubuntu
+    service:
+      name: rabbitmq-server
+      state: started
+      enabled: yes
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Install Memcached for Ubuntu
+    package:
+      name: memcached
+      state: present
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Start and enable memcached service for Ubuntu
+    service:
+      name: memcached
+      state: started
+      enabled: yes
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Install Etcd for Ubuntu
+    package:
+      name: etcd
+      state: present
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Start and enable etcd service for Ubuntu
+    service:
+      name: etcd
+      state: started
+      enabled: yes
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Set OpenStack packages for CentOS
+    set_fact:
+      openstack_packages_centos:
+#        - openstack-packstack
+        - mariadb-server
+        - rabbitmq-server
+        - memcached
+        - etcd
+    when: ansible_distribution == "CentOS"
+
+  - name: Install and configure EPEL repository for CentOS
+    yum:
+      name: epel-release
+      state: latest
+    when: ansible_distribution == "CentOS"
+
+  - name: Install and configure NTP for CentOS
+    yum:
+      name: chrony
+      state: present
+    tags: ntp
+    when: ansible_distribution == "CentOS"
+
+  - name: Start and enable NTP service for CentOS
+    service:
+      name: chronyd
+      state: started
+      enabled: yes
+    tags: ntp
+    when: ansible_distribution == "CentOS"
+
+  - name: Install OpenStack packages for CentOS
+    yum:
+      name: "{{ item }}"
+      state: present
+    with_items: "{{ openstack_packages_centos }}"
+    tags: openstack-packages
+    when: ansible_distribution == "CentOS"
+
+  - name: Update package cache for CentOS
+    package:
+      name: "{{ item }}"
+      state: present
+    with_items: "{{ openstack_packages_centos }}"
+    when: ansible_distribution == "CentOS"
+
+  - name: Install and configure SQL Database for CentOS
+    package:
+      name: mariadb-server
+      state: present
+    tags: sql-database
+    when: ansible_distribution == "CentOS"
+
+  - name: Install and configure Message Queue for CentOS
+    package:
+      name: rabbitmq-server
+      state: present
+    tags: message-queue
+    when: ansible_distribution == "CentOS"
+
+  - name: Install and configure Memcached for CentOS
+    package:
+      name: memcached
+      state: present
+    tags: memcached
+    when: ansible_distribution == "CentOS"
+
+  - name: Install etcd package
+    package:
+      name: etcd
+      state: present
+    when: ansible_distribution == "CentOS"
+
+  - name: Enabling openstack repository
+    yum:
+      name: centos-release-openstack-train
+      state: latest
+      use_backend: yum
+    when: ansible_distribution == "CentOS"
+
+
+  - name: Downloading and installing the RDO repository to enable openstack repository
+    yum:
+      name: https://rdoproject.org/repos/rdo-release.rpm
+      state: present
+      use_backend: yum
+    ignore_errors: true
+    when: ansible_distribution == "CentOS"
+
+  - name: Updating repository and upgrading packages
+    yum:
+      name: '*'
+      state: latest
+      update_cache: true
+      use_backend: yum
+    when: ansible_distribution == "CentOS"
+
+  - name: Installing openstack for CentOS
+    yum:
+      name:
+        - openstack-selinux
+        - python-openstackclient
+        - openstack-utils
+      use_backend: yum
+    when: ansible_distribution == "CentOS"
